@@ -159,6 +159,10 @@ export default function Home(){
         navigate("/piano");
     }
     
+    function leaderboards(){
+        navigate("/leaderboard");
+    }
+
     return (
         (!joinedLobby) ? (
         <Grid
@@ -232,6 +236,11 @@ export default function Home(){
                     <Grid item>
                         <Button variant="contained" color="error" onClick={piano} style={{ width: 200 }}>
                             Practice Piano
+                        </Button>
+                    </Grid>
+                    <Grid item>
+                        <Button variant="contained" color="primary" onClick={leaderboards} style={{ width: 200 }}>
+                            Leaderboards
                         </Button>
                     </Grid>
                 <Snackbar open={SnackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>

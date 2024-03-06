@@ -14,6 +14,7 @@ import { CssBaseline, Typography, Link } from "@mui/material";
 import "./Knewave.css"
 
 import { blue, green, red } from "@mui/material/colors";
+import GlobalLeaderboard from "./features/GlobalLeaderboard";
 
 const theme = createTheme({
     palette: {
@@ -98,6 +99,7 @@ function App() {
           <Route path="/register" exact element= {<Register/>} />
           <Route path ="/profile" exact element= {<Profile/>} />
           <Route path = "/piano" exact element= {<ReactPiano/>} />
+          <Route path = "/leaderboard" exact element = {<GlobalLeaderboard/>} />
         </Routes>
       </BrowserRouter>
     </div>
