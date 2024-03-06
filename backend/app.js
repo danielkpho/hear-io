@@ -51,8 +51,8 @@ app.use(express.json());
 
 const io = socketio(expressServer, {
     cors: {
-        // origin: ['http://localhost:3000', 'http://localhost:8000'],
-        origin: ['https://heario-client-54bae534a8b4.herokuapp.com', 'https://danielkpho.github.io'],
+        origin: ['http://localhost:3000', 'http://localhost:8000'],
+        // origin: ['https://heario-client-54bae534a8b4.herokuapp.com', 'https://danielkpho.github.io'],
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -67,9 +67,9 @@ const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:post
 
 const pool = new Pool({
     connectionString: connectionString,
-    ssl: {
-        rejectUnauthorized: false, // Accept any SSL certificate (not recommended for production)
-      }
+    // ssl: {
+    //     rejectUnauthorized: false, // Accept any SSL certificate (not recommended for production)
+    //   }
 });
 
 pool.connect()
@@ -374,6 +374,28 @@ app.post('/updateRank', verifyToken, async function(req, res) {
         console.log(err);
     }
 });
+
+app.post('/getGlobalLeaderboard', async function(req, res) {
+    try {
+        const result = await pool.query(`
+        SELECT
+    rank.rank,
+    users.username, 
+    games_played.total_games_played, 
+    games_played.games_won
+FROM rank 
+JOIN users ON rank.user_id = users.user_id
+JOIN games_played ON users.user_id = games_played.user_id
+ORDER BY rank.rank;
+        `);
+
+        res.send({ result: result.rows });
+    } catch (err) {
+        res.status(500).send({ err: err.message });
+        console.log(err);
+    }
+});
+
 
 
 
