@@ -50,7 +50,7 @@ export default function Home(){
     function createGame(){
         const roomId = nanoid(4);
             if (username) {
-                socket.emit("createRoom", { id: roomId, roundSettings: {rounds: 3, time: 10, piano: 0, notes: true, sharps: false, intervals: false, scales: false, chords: false}, name, rank })
+                socket.emit("createRoom", { id: roomId, roundSettings: {rounds: 3, time: 10, piano: 0, difficulty: 0, notes: true, sharps: false, intervals: false, scales: false, chords: false}, name, rank })
                 dispatch(setId(roomId));
                 dispatch(setHostId(socket.id));
                 dispatch(setJoinedLobby(true));

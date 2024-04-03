@@ -65,10 +65,11 @@ export default function Game(){
           .then((acoustic_grand_piano) => {
             somePiano = acoustic_grand_piano;
             setPiano(acoustic_grand_piano);
-            console.log("piano is ready");
             setIsPianoReady(true);
-            // console.log("ac state: " + ac.state);
-          });
+          })
+          .catch((error) => {
+            console.error("Error loading piano:", error);
+            });
     
         return () => {
             if (ac.state === 'running') {
@@ -99,8 +100,14 @@ export default function Game(){
             // socket.emit("getTone", { roomId: id });
             socket.on("tone", (tone) => {
                 dispatch(setTone(tone));
-                // console.log("received tone: "+ tone);
-                handlePlayNote(tone);
+                console.log("received tone: "+ tone);
+                if (isPianoReady){
+                    handlePlayNote();                
+                    console.log("handePlayNote");
+                } else {
+                    console.log("piano : " + piano);
+                    console.log("isPianoReady: " + isPianoReady);
+                }
             });
             // socket.emit("getAnswers", { roomId: id });
             socket.on("answers", (answers) => {
@@ -116,25 +123,50 @@ export default function Game(){
                 
             };
     }, [dispatch]);
+    
+    let isPlaying = false;
 
     async function handlePlayNote() {
-        // console.log("isPianoReady: " + isPianoReady)
-        // console.log("piano: " + JSON.stringify(piano))
+        console.log("piano : " + piano);
+        console.log("isPianoReady: " + isPianoReady);
+        await new Promise((resolve) => { 
+            if (isPianoReady) {
+                resolve(); // Piano is ready, resolve immediately
+            } else {
+                const intervalId = setInterval(() => {  // Check repeatedly
+                    if (isPianoReady) {
+                        clearInterval(intervalId);
+                        resolve(); 
+                    }
+                }, 50); // Check every 50 milliseconds
+            }
+        });
+        if (isPlaying){
+            isPlaying = false;
+        }
         if (piano) {
             try { 
                 if (Array.isArray(tone)) {
+                    isPlaying = true;
+
                     if (questionType === 'scales'){
                     // Play notes sequentially with a delay
                         for (const note of tone) { 
                             await piano.play(note);
                             // Introduce a delay between notes
                             await new Promise(resolve => setTimeout(resolve, 1000));
+                            if (!isPlaying){
+                                break;
+                            }
                         }
+                        
                         // console.log("Played notes: " + tone.join(', '));
                     } else {
                         await Promise.all(tone.map(note => piano.play(note)));
                         // console.log("Played notes: " + tone.join(', '));
                     }
+
+                    isPlaying = false;
                 } else {
                     console.error("Invalid tone format:", tone);
                 }
@@ -143,7 +175,8 @@ export default function Game(){
                 console.error("Error playing notes:", error);
             }
         } else {
-            console.log("Piano not ready");
+            console.log("piano : " + piano);
+            console.log("isPianoReady: " + isPianoReady)
         }
     }
 
@@ -194,7 +227,7 @@ export default function Game(){
 
     function handleLeave(){ // problem with rendering twice so it is here
         if (username === winner){ 
-            Axios.post("http://localhost:8000/incrementGamesWon", {}, {
+            Axios.post("https://heario-13b5b094cc85.herokuapp.com/incrementGamesWon", {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -204,7 +237,7 @@ export default function Game(){
                 console.log(error);
             });
         }
-        Axios.post("http://localhost:8000/getRank", {}, {
+        Axios.post("https://heario-13b5b094cc85.herokuapp.com/getRank", {}, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -221,7 +254,7 @@ export default function Game(){
     function restartGame() {    
         if (username === winner) {
             // Include the token in the Authorization header for the /incrementGamesWon request
-            Axios.post("http://localhost:8000/incrementGamesWon", {}, {
+            Axios.post("https://heario-13b5b094cc85.herokuapp.com/incrementGamesWon", {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -233,7 +266,7 @@ export default function Game(){
         }
     
         // Include the token in the Authorization header for the /getRank request
-        Axios.post("http://localhost:8000/getRank", {}, {
+        Axios.post("https://heario-13b5b094cc85.herokuapp.com/getRank", {}, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -268,6 +301,10 @@ export default function Game(){
                         )}
                         {isPianoReady && (
                         <div>
+                        <div>
+                            <button onClick={restartGame}>Restart Game</button>
+                            <button onClick={nextRound}>Next Round</button>
+                            </div>
                             <Grid container justifyContent="center" alignItems="center" spacing={2}>
                                 <Grid item>
                                     <Button 

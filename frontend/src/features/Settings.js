@@ -10,6 +10,7 @@ export default function Settings(){
         rounds: 3, 
         time: 10,
         piano: 0,
+        difficulty: 0,
         sharps: false,
         notes: true,
         intervals: false,
@@ -157,6 +158,25 @@ export default function Settings(){
                             <MenuItem value={15} >15 Seconds</MenuItem>
                             <MenuItem value={20} >20 Seconds</MenuItem>
                             <MenuItem value={30} >30 Seconds</MenuItem>
+                        </Select>
+                    </FormControl>
+                    </Grid>
+                    <Grid xs={6} item justifyContent={"center"}>
+                        Difficulty:
+                    </Grid>
+                    <Grid item xs={6}>
+                    <FormControl fullWidth>
+                    <InputLabel>Easy</InputLabel>
+                        <Select
+                            label="Difficulty"
+                            name="difficulty"
+                            value={roundSettings.difficulty}
+                            onChange={handleChange}
+                            variant="outlined"
+                        >
+                            <MenuItem value={0} >Easy</MenuItem>
+                            <MenuItem value={1} >Medium</MenuItem>
+                            <MenuItem value={2} >Hard</MenuItem>
                         </Select>
                     </FormControl>
                     </Grid>
