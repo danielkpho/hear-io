@@ -28,7 +28,7 @@ export default function GlobalLeaderboard(){
       };
 
     useEffect(() => {
-        Axios.post("https://heario-13b5b094cc85.herokuapp.com/getGlobalLeaderboard", {}).then((response) => {
+        Axios.post("http://localhost:8000/getGlobalLeaderboard", {}).then((response) => {
             setData(response.data.result);
         }).catch((error) => {
             console.log(error);
