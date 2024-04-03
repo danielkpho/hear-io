@@ -64,7 +64,7 @@ class Room {
         this.currentIndex = (this.roundCount - 1) % this.typesSelected.length; // To loop through typesSelected
         if (this.currentIndex < this.typesSelected.length) {
           const type = this.typesSelected[this.currentIndex];
-          const noteQuestion = await NoteQuestion.init(type);
+          const noteQuestion = await NoteQuestion.init(type, this.roundSettings.difficulty);
     
           const note = noteQuestion.getNote();
           const tone = noteQuestion.getTone();
