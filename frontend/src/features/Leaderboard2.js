@@ -5,7 +5,6 @@ import { socket } from "../api/socket";
 
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
-
 export default function Leaderboard2(){
     const id = useSelector(state => state.game.id);
     const [data, setData] = useState([]);
@@ -13,7 +12,6 @@ export default function Leaderboard2(){
     useEffect(() => {
         socket.emit("getData", {roomId: id});      
             socket.on("data", newData => { 
-                console.log(newData);
                 setData(newData);
             })
         return () => {

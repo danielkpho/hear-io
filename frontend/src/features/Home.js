@@ -21,6 +21,7 @@ export default function Home(){
     const joinedLobby = useSelector(state => state.game.joinedLobby);
     
     const username = localStorage.getItem("username");
+    const rank = parseInt(localStorage.getItem("rank"));
 
     useEffect(() => {
         if (username) {
@@ -30,6 +31,7 @@ export default function Home(){
     , [username]);
     
     useEffect(() => {
+        console.log("getting rooms")
         socket.emit("getRooms");
     }, []);
 
@@ -43,19 +45,18 @@ export default function Home(){
           socket.off("rooms");
         };
       }, []);
-
     
 
     function createGame(){
         const roomId = nanoid(4);
-            if (name) {
-                socket.emit("createRoom", { id: roomId, roundSettings: {rounds: 3, time: 10, piano: 0, notes: true, sharps: false, intervals: false, scales: false, chords: false}, name })
+            if (username) {
+                socket.emit("createRoom", { id: roomId, roundSettings: {rounds: 3, time: 10, piano: 0, difficulty: 0, notes: true, sharps: false, intervals: false, scales: false, chords: false}, name, rank })
                 dispatch(setId(roomId));
                 dispatch(setHostId(socket.id));
                 dispatch(setJoinedLobby(true));
             } 
             else {
-                setAlertMessage("Please enter a name");
+                setAlertMessage("Please register first");
                 setSnackbarOpen(true);
             }
     };
@@ -85,14 +86,18 @@ export default function Home(){
     };
 
     function joinGame(){
-        console.log(isRoomJoinable(roomId));
-        if (isRoomJoinable(roomId) && name) {
-                socket.emit("joinRoom", { id: roomId, name });
+        // console.log(isRoomJoinable(roomId));
+        if (isRoomJoinable(roomId) && username) {
+                socket.emit("joinRoom", { id: roomId, name, rank });
                 dispatch(setId(roomId));
                 dispatch(setJoinedLobby(true));
         }
         if (!name) {
             setAlertMessage("Please enter a name");
+            setSnackbarOpen(true);
+        }
+        if (!username){
+            setAlertMessage("Please register first");
             setSnackbarOpen(true);
         }
         if (!doesRoomExist(roomId)) {
@@ -120,9 +125,14 @@ export default function Home(){
             setSnackbarOpen(true);
             return;
         }
+        if (!username){
+            setAlertMessage("Please register first");
+            setSnackbarOpen(true);
+            return;
+        }
         const randomRoomId = availableRooms[Math.floor(Math.random() * availableRooms.length)].id;
-        if(name){
-            socket.emit("joinRoom", { id: randomRoomId, name });
+        if(username){
+            socket.emit("joinRoom", { id: randomRoomId, name, rank });
             dispatch(setId(randomRoomId));
             dispatch(setJoinedLobby(true));
         }
@@ -149,6 +159,10 @@ export default function Home(){
         navigate("/piano");
     }
     
+    function leaderboards(){
+        navigate("/leaderboard");
+    }
+
     return (
         (!joinedLobby) ? (
         <Grid
@@ -222,6 +236,11 @@ export default function Home(){
                     <Grid item>
                         <Button variant="contained" color="error" onClick={piano} style={{ width: 200 }}>
                             Practice Piano
+                        </Button>
+                    </Grid>
+                    <Grid item>
+                        <Button variant="contained" color="primary" onClick={leaderboards} style={{ width: 200 }}>
+                            Leaderboards
                         </Button>
                     </Grid>
                 <Snackbar open={SnackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>

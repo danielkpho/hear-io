@@ -10,7 +10,6 @@ import { resetState, setScores, incrementRound, incrementQuestion, resetGame, se
 import { newQuestion, resetStats } from "./statSlice.js"
 import { setAnswers, setQuestionType, setTone, setCorrectAnswer, correctAns, currentTone } from "./questionsSlice";
 
-import { getAudioContextInstance } from "./audioContextSingleton.js";
 
 import Timer from "./Timer";
 import Leaderboard from "./Leaderboard";
@@ -42,6 +41,7 @@ export default function Game(){
     const [showBackdrop, setShowBackdrop] = useState(false);
     const username = localStorage.getItem("username");
     const winner = useSelector(state => state.stats.winner);
+    const token = localStorage.getItem("token");
 
     const LazyReactPiano = lazyWithPreload(() => import("./Piano/Piano.js"));
     const [pianoLoaded, setPianoLoaded] = useState(false);
@@ -59,25 +59,29 @@ export default function Game(){
         }, [pianoLoaded]);
 
     let somePiano;
-    useEffect(() => { // fix loading 
-        const ac = getAudioContextInstance();
+    useEffect(() => {
+        const ac = new AudioContext();
         soundfontInstrument(ac, 'acoustic_grand_piano', { soundfont: 'MusyngKite' })
           .then((acoustic_grand_piano) => {
             somePiano = acoustic_grand_piano;
             setPiano(acoustic_grand_piano);
-            console.log("piano is ready");
             setIsPianoReady(true);
-          });
+          })
+          .catch((error) => {
+            console.error("Error loading piano:", error);
+            });
     
         return () => {
-          ac.close();
+            if (ac.state === 'running') {
+                ac.close();
+              }
         };
       }, []);
 
     useEffect(() => {
         if(isPianoReady){
             if (socket.id === hostId){ // emit the question to the server if the user is the host
-                console.log("emitted get question");
+                // console.log("emitted get question");
                 socket.emit("getQuestion", id);
             };
             return () => {
@@ -97,7 +101,13 @@ export default function Game(){
             socket.on("tone", (tone) => {
                 dispatch(setTone(tone));
                 console.log("received tone: "+ tone);
-                handlePlayNote(tone);
+                if (isPianoReady){
+                    handlePlayNote();                
+                    console.log("handePlayNote");
+                } else {
+                    console.log("piano : " + piano);
+                    console.log("isPianoReady: " + isPianoReady);
+                }
             });
             // socket.emit("getAnswers", { roomId: id });
             socket.on("answers", (answers) => {
@@ -113,25 +123,50 @@ export default function Game(){
                 
             };
     }, [dispatch]);
+    
+    let isPlaying = false;
 
     async function handlePlayNote() {
-        console.log("isPianoReady: " + isPianoReady)
-        console.log("piano: " + JSON.stringify(piano))
+        console.log("piano : " + piano);
+        console.log("isPianoReady: " + isPianoReady);
+        await new Promise((resolve) => { 
+            if (isPianoReady) {
+                resolve(); // Piano is ready, resolve immediately
+            } else {
+                const intervalId = setInterval(() => {  // Check repeatedly
+                    if (isPianoReady) {
+                        clearInterval(intervalId);
+                        resolve(); 
+                    }
+                }, 50); // Check every 50 milliseconds
+            }
+        });
+        if (isPlaying){
+            isPlaying = false;
+        }
         if (piano) {
             try { 
                 if (Array.isArray(tone)) {
+                    isPlaying = true;
+
                     if (questionType === 'scales'){
                     // Play notes sequentially with a delay
                         for (const note of tone) { 
                             await piano.play(note);
                             // Introduce a delay between notes
                             await new Promise(resolve => setTimeout(resolve, 1000));
+                            if (!isPlaying){
+                                break;
+                            }
                         }
-                        console.log("Played notes: " + tone.join(', '));
+                        
+                        // console.log("Played notes: " + tone.join(', '));
                     } else {
                         await Promise.all(tone.map(note => piano.play(note)));
-                        console.log("Played notes: " + tone.join(', '));
+                        // console.log("Played notes: " + tone.join(', '));
                     }
+
+                    isPlaying = false;
                 } else {
                     console.error("Invalid tone format:", tone);
                 }
@@ -140,7 +175,8 @@ export default function Game(){
                 console.error("Error playing notes:", error);
             }
         } else {
-            console.log("Piano not ready");
+            console.log("piano : " + piano);
+            console.log("isPianoReady: " + isPianoReady)
         }
     }
 
@@ -149,9 +185,9 @@ export default function Game(){
     }
         
 
-    useEffect(() => {
+    useEffect(() => { // rendering twice
         socket.on("nextRound", () => {
-            console.log("roundCount: " + roundCount);
+            // console.log("roundCount: " + roundCount);
             if(roundCount < roundSettings.rounds){
                 if(socket.id === hostId){
                     socket.emit("getQuestion", id);
@@ -163,6 +199,9 @@ export default function Game(){
             } else {
                 dispatch(setIsGameOver(true));
                 dispatch(setStatus("Leaderboard"));
+                if (socket.id === hostId){
+                    socket.emit("gameEnded", { roomId: id })
+                }
             }
         });
         return () => {
@@ -186,38 +225,62 @@ export default function Game(){
         setShowBackdrop(false);
     }
 
-    function handleLeave(){
+    function handleLeave(){ // problem with rendering twice so it is here
         if (username === winner){ 
-            Axios.post("http://localhost:8000/incrementGamesWon", {
-                username,
-            } , {
+            Axios.post("http://localhost:8000/incrementGamesWon", {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }).then((response) => {
                 console.log(response);
             }).catch((error) => {
                 console.log(error);
             });
         }
+        Axios.post("http://localhost:8000/getRank", {}, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        }).then((response) => {
+                localStorage.setItem("rank", response.data.rank);
+            }).catch((error) => {
+                console.log(error);
+        });
         socket.emit("leaveRoom", { roomId: id });
         dispatch(resetState());
         dispatch(resetStats())
     }
 
-    function restartGame(){
-        if (username === winner){ 
-            Axios.post("http://localhost:8000/incrementGamesWon", {
-                username,
-            } , {
+    function restartGame() {    
+        if (username === winner) {
+            // Include the token in the Authorization header for the /incrementGamesWon request
+            Axios.post("http://localhost:8000/incrementGamesWon", {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }).then((response) => {
                 console.log(response);
             }).catch((error) => {
                 console.log(error);
             });
         }
+    
+        // Include the token in the Authorization header for the /getRank request
+        Axios.post("http://localhost:8000/getRank", {}, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        }).then((response) => {
+            localStorage.setItem("rank", response.data.rank);
+        }).catch((error) => {
+            console.log(error);
+        });
+    
         socket.emit("resetGame", { roomId: id });
         dispatch(resetGame());
         dispatch(resetStats());
-    };
-
+    }
+    
     function isPiano(){
         if (roundSettings.piano === 0){
             return false;
@@ -238,9 +301,9 @@ export default function Game(){
                         )}
                         {isPianoReady && (
                         <div>
-                            <div>
-                            <button onClick={() => restartGame()}>End Game</button>
-                            <button onClick={() => nextRound()}>Next Round</button>
+                        <div>
+                            <button onClick={restartGame}>Restart Game</button>
+                            <button onClick={nextRound}>Next Round</button>
                             </div>
                             <Grid container justifyContent="center" alignItems="center" spacing={2}>
                                 <Grid item>

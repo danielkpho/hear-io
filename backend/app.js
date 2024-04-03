@@ -5,13 +5,41 @@ const socketio = require('socket.io');
 const cors = require('cors');
 const PORT = process.env.PORT || 8000; // port to run server on
 
-// require('dotenv').config();
-// const secretKey = process.env.HEARIO_SECRET_KEY;
+require('dotenv').config();
+const secretKey = process.env.HEARIO_SECRET_KEY;
 
 // console.log(secretKey);
-// const crypto = require('crypto');
+const crypto = require('crypto');
 
+function generateToken(username, expirationInSeconds) {
+    const payload = {
+        username,
+        exp: Math.floor(Date.now() /  1000) + expirationInSeconds,
+    };
 
+    // Use a secure algorithm and the secret key for signing
+    return jwt.sign(payload, secretKey, { algorithm: 'HS256' });
+}
+
+function verifyToken(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1]; // Assuming the token is sent as 'Bearer <token>'
+    
+    if (!token) {
+        res.status(401).send({ message: "No token provided" });
+        return;
+    }
+
+    jwt.verify(token, secretKey, { algorithms: ['HS256'] }, (err, payload) => {
+        if (err) {
+            res.status(401).send({ message: "Invalid token" });
+            console.error(err); // Use console.error for errors
+            return;
+        }
+
+        req.username = payload.username;
+        next();
+    });
+}
 
 const app = express();
 const expressServer = app.listen(PORT, () => // start server on port 8000
@@ -23,9 +51,8 @@ app.use(express.json());
 
 const io = socketio(expressServer, {
     cors: {
-        // origin: ['http://localhost:3000', 'http://localhost:8000'],
-        origin: ['https://heario-client-54bae534a8b4.herokuapp.com',
-    'https://danielkpho.github.io/heario-client'],
+        origin: ['http://localhost:3000', 'http://localhost:8000'],
+        // origin: ['https://heario-client-54bae534a8b4.herokuapp.com', 'https://danielkpho.github.io'],
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -72,15 +99,6 @@ pool.connect()
         )
         `);
     
-        // Create 'user_tokens' table
-        await client.query(`
-        CREATE TABLE IF NOT EXISTS user_tokens (
-            user_id INT PRIMARY KEY,
-            token TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        `);
-    
         // Create 'user_attempts' table
         await client.query(`
         CREATE TABLE IF NOT EXISTS user_attempts (
@@ -93,6 +111,14 @@ pool.connect()
             FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
         )
         `);
+
+        await client.query(`
+        CREATE TABLE IF NOT EXISTS rank (
+            user_id INTEGER PRIMARY KEY,
+            rank INT,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );
+        `)
     
         console.log('Tables created successfully');
     
@@ -109,45 +135,7 @@ process.on('SIGINT', () => {
       .finally(() => process.exit(0));
   });
 
-// app.post('/register', function(req, res) {
-//     const username = req.body.username;
-//     const password = req.body.password;
 
-//     // Check if the user already exists
-//     db.get("SELECT * FROM users WHERE username = ?", [username], (err, existingUser) => {
-//         if (err) {
-//             res.status(500).send({ err: err });
-//             console.log(err);
-//         } else if (existingUser) {
-//             res.status(200).send({ message: "User already exists!" });
-//             console.log("User already exists");
-//         } else {
-//             // If the user doesn't exist, insert the new user
-//             db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, password], (err, result) => {
-//                 if (err) {
-//                     res.status(500).send({ err: err });
-//                     console.log(err);
-//                 } else {
-//                     // User successfully added to the database
-//                     const token = generateToken(username, 3600);
-
-//                     res.status(200).send({ message: "User added to database", username, token });
-//                     console.log("User added to database");
-//                 }
-//             });
-//             // db.run("INSERT INTO games_played (user_id, total_games_played, games_won) VALUES ((SELECT user_id FROM users WHERE username = ?), 0, 0)", [username], (err, result) => {
-//             //     if (err) {
-//             //         res.status(500).send({ err: err });
-//             //         console.log(err);
-//             //     } else {
-//             //         // User successfully added to the database
-//             //         res.send({ message: "User games database init" });
-//             //         console.log("User games database init");
-//             //     }
-//             // });
-//         }
-//     });
-// });
 app.post('/register', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -163,12 +151,6 @@ app.post('/register', async (req, res) => {
         } else {
             // If the user doesn't exist, insert the new user
             const result = await pool.query('INSERT INTO users (username, password) VALUES ($1, $2) RETURNING user_id', [username, password]);
-
-            // Get the inserted user_id
-            const userId = result.rows[0].user_id;
-
-            // Optionally, you can initialize the games_played table for the new user
-            // await pool.query('INSERT INTO games_played (user_id, total_games_played, games_won) VALUES ($1, 0, 0)', [userId]);
 
             // User successfully added to the database
             const token = generateToken(username, 3600);
@@ -191,27 +173,8 @@ app.post('/login', async (req, res) => {
         const result = await pool.query('SELECT * FROM users WHERE username = $1 AND password = $2', [username, password]);
 
         if (result.rows.length > 0) {
-            const user_id = result.rows[0].user_id;
-
-            // Check if there is an existing token for the user
-            const existingTokenResult = await pool.query('SELECT token FROM user_tokens WHERE user_id = $1', [user_id]);
-
-            if (existingTokenResult.rows.length > 0) {
-                // If token exists, use the existing one
-                const existingToken = existingTokenResult.rows[0].token;
-                console.log("Using existing token for user:", username);
-                res.send({ username, token: existingToken });
-            } else {
-                // Generate a new token
-                const token = generateToken(username, 3600);
-
-                // Insert the new token into the database
-                await pool.query('INSERT INTO user_tokens (user_id, token) VALUES ($1, $2)', [user_id, token]);
-
-                console.log("User logged in");
-                console.log("New token added to the database for user:", username);
-                res.send({ username, token });
-            }
+            const token = generateToken(username, 3600);
+            res.send({ username, token });
         } else {
             res.send({ message: "Wrong username/password combination!" });
         }
@@ -222,8 +185,8 @@ app.post('/login', async (req, res) => {
 });
 
 // app.post('/incrementGamesPlayed', verifyToken, function(req, res) {
-app.post('/incrementGamesPlayed', async (req, res) => {
-    const username = req.body.username;
+app.post('/incrementGamesPlayed', verifyToken, async (req, res) => {
+    const username = req.username;
 
     try {
         // Increment games played using an upsert (INSERT ON CONFLICT UPDATE)
@@ -246,8 +209,8 @@ app.post('/incrementGamesPlayed', async (req, res) => {
     }
 });
 
-app.post('/incrementGamesWon', async (req, res) => {
-    const username = req.body.username;
+app.post('/incrementGamesWon', verifyToken, async (req, res) => {
+    const username = req.username;
 
     try {
         // Increment games won using an upsert (INSERT ON CONFLICT UPDATE)
@@ -270,9 +233,8 @@ app.post('/incrementGamesWon', async (req, res) => {
     }
 });
 
-app.post('/getGamesPlayed', async (req, res) => {
-    const username = req.body.username;
-
+app.post('/getGamesPlayed', verifyToken, async (req, res) => {
+    const username = req.username;
     try {
         // Upsert (INSERT or UPDATE) the user's data into games_played
         await pool.query(`
@@ -305,12 +267,12 @@ app.post('/getGamesPlayed', async (req, res) => {
 });
 
 
-app.post('/updateAttempts', async (req, res) => {
-    const username = req.body.username;
-    const questionType = req.body.questionType;
-    const question = req.body.question;
-    const correctAttempts = req.body.correctAttempts;
-    const totalAttempts = req.body.totalAttempts;
+app.post('/updateAttempts', verifyToken, async (req, res) => {
+    const username = req.username;
+    const questionType = req.body.questionType; // Make sure this is the correct property name
+    const question = req.body.question; // Make sure this is the correct property name
+    const correctAttempts = req.body.correctAttempts; // Make sure this is the correct property name
+    const totalAttempts = req.body.totalAttempts; // Make sure this is the correct property name
 
     try {
         // Using an upsert (INSERT ON CONFLICT UPDATE) to either update or insert a new row
@@ -336,38 +298,8 @@ app.post('/updateAttempts', async (req, res) => {
     }
 });
 
-function generateToken(username, expirationInSeconds) { // token that contains username and expiration time
-    const payload = {
-        username,
-        exp: Math.floor(Date.now() / 1000) + expirationInSeconds,
-    };
-
-    return jwt.sign(payload, null, { algorithm: 'none' });
-}
-
-function verifyToken(req, res, next) {
-    const token = req.headers.authorization;
-    
-    if (!token) {
-        res.status(401).send({ message: "No token provided" });
-        return;
-    }
-
-    jwt.verify(token, null, { algorithms: ['none'] }, (err, payload) => {
-        if (err) {
-            res.status(401).send({ message: "Invalid token" });
-            console.log(err);
-            console.log(token)
-            return;
-        }
-
-        req.username = payload.username;
-        next();
-    });
-}
-
-app.post('/getAttempts', async (req, res) => {
-    const username = req.body.username;
+app.post('/getAttempts', verifyToken, async (req, res) => {
+    const username = req.username;
 
     try {
         // Retrieve attempts using a parameterized query
@@ -384,6 +316,85 @@ app.post('/getAttempts', async (req, res) => {
     }
 });
 
+app.post('/getRank', verifyToken, async function(req, res) {
+    const username = req.username;
+
+    try {
+        // First, retrieve the user_id associated with the username
+        const userResult = await pool.query("SELECT user_id FROM users WHERE username = $1", [username]);
+        const userId = userResult.rows[0] ? userResult.rows[0].user_id : null;
+
+        if (!userId) {
+            // Handle the case where the user_id is not found
+            return res.status(404).send({ message: "User not found" });
+        }
+
+        // Insert a new row with the user's rank or update the existing row if it already exists
+        await pool.query(`
+            INSERT INTO rank (user_id, rank)
+            VALUES (
+                $1,
+                1200
+            )
+            ON CONFLICT (user_id) DO NOTHING
+        `, [userId]);
+
+        // Retrieve the user's rank
+        const rankResult = await pool.query("SELECT rank FROM rank WHERE user_id = $1", [userId]);
+        const rank = rankResult.rows[0] ? rankResult.rows[0].rank :  1200;
+
+        // Send the user's rank
+        res.send({ rank });
+    } catch (err) {
+        res.status(500).send({ err: err.message });
+        console.log(err);
+    }
+});
+
+
+app.post('/updateRank', verifyToken, async function(req, res) {
+    const username = req.username;
+    const newRank = req.body.newRank;
+
+    try {
+        await pool.query(`
+            INSERT INTO rank (user_id, rank)
+            VALUES (
+                (SELECT user_id FROM users WHERE username = $1),
+                $2
+            )
+            ON CONFLICT (user_id) DO UPDATE SET
+                rank = EXCLUDED.rank
+        `, [username, newRank]);
+
+        console.log("Rank updated");
+        res.send({ message: "Rank updated" });
+    } catch (err) {
+        res.status(500).send({ err: err.message });
+        console.log(err);
+    }
+});
+
+app.post('/getGlobalLeaderboard', async function(req, res) {
+    try {
+        const result = await pool.query(`
+        SELECT
+    rank.rank,
+    users.username, 
+    games_played.total_games_played, 
+    games_played.games_won
+FROM rank 
+JOIN users ON rank.user_id = users.user_id
+JOIN games_played ON users.user_id = games_played.user_id
+ORDER BY rank.rank;
+        `);
+
+        res.send({ result: result.rows });
+    } catch (err) {
+        res.status(500).send({ err: err.message });
+        console.log(err);
+    }
+});
 
 
 
@@ -393,17 +404,17 @@ app.post('/getAttempts', async (req, res) => {
 
 
 
-io.on('connection', socket => { 
+io.on('connection', socket => {
     console.log('user with socket id ' + socket.id + ' connected');
     io.to(socket.id).emit("allRoomsId", Object.keys(rooms));
 
-    socket.on("createRoom", ({ id, roundSettings, name }) => { // host creates room
+    socket.on("createRoom", ({ id, roundSettings, name, rank }) => { // host creates room
         if (!rooms[id]) {
             rooms[id] = new Room(id, socket.id, roundSettings); // create new room with id and host id
         }
         const room = rooms[id];
         socket.join(id);
-        room.addPlayer(socket.id, name);
+        room.addPlayer(socket.id, name, rank);
         if (room.getPlayer(socket.id)){ 
             io.to(id).emit("allPlayers", room.getAllPlayers()); // send all players in room to new player
         }
@@ -419,12 +430,12 @@ io.on('connection', socket => {
     });
     
 
-    socket.on("joinRoom", ({id, name}) => { // player joins room
+    socket.on("joinRoom", ({id, name, rank}) => { // player joins room
         const room = rooms[id];
         if (!room) return; 
         if (room.players.length >= 4) return; // room is full
         socket.join(id);
-        room.addPlayer(socket.id, name);
+        room.addPlayer(socket.id, name, rank);
         if (room.getPlayer(socket.id)){ // if player was added successfully
             io.to(id).emit("allPlayers", room.getAllPlayers()); // send all players in room to new player
         }
@@ -549,6 +560,56 @@ io.on('connection', socket => {
             const senderName = room.getPlayer(socket.id).name;
             socket.broadcast.to(roomId).emit("message", { name: senderName, message });        }
     });
+
+    socket.on("gameEnded", async ({ roomId }) => {
+        const room = rooms[roomId];
+        if (room) {
+            // Calculate new ratings
+            const updatedPlayers = room.calculateNewRating();
+    
+            // Helper function to get user_id from username
+            const getUserIdFromUsername = async (username) => {
+                const res = await pool.query('SELECT user_id FROM users WHERE username = $1', [username]);
+                return res.rows[0] ? res.rows[0].user_id : null;
+            };
+    
+            // Begin a transaction
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+            
+                const updatePromises = Object.values(updatedPlayers).map(async (player) => {
+                    try {
+                        const user_id = await getUserIdFromUsername(player.name);
+                        if (!user_id) {
+                            throw new Error(`No user found with username ${player.name}`);
+                        }
+                        const sql = 'UPDATE rank SET rank = $1 WHERE user_id = $2';
+                        const result = await client.query(sql, [player.rank, user_id]);
+                        console.log(`Updated rank for user_id ${user_id}:`, result.rowCount);
+                    } catch (err) {
+                        console.error(`Error updating rank for player ${player.name}:`, err);
+                        throw err; // Propagate the error to the Promise.all() handler
+                    }
+                });
+            
+                await Promise.all(updatePromises);
+                
+            
+                await client.query('COMMIT');
+                console.log('Transaction committed successfully.');
+            } catch (err) {
+                await client.query('ROLLBACK');
+                console.error('An error occurred during the transaction:', err);
+            } finally {
+                client.release();
+            }            
+        }
+    });
+    
+    
+
+            
 
     socket.on("resetGame", ({ roomId }) => { // host resets game
         console.log('user with socket id ' + socket.id + ' resetted game in room ' + roomId);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Piano, KeyboardShortcuts, MidiNumbers } from 'react-piano';
+
 import 'react-piano/dist/styles.css';
 
 import { Grid } from "@mui/material";
@@ -52,7 +53,7 @@ function BasicPiano() {
                 playNote={playNote}
                 stopNote={stopNote}
                 disabled={isLoading}
-                keyboardShortcuts={keyboardShortcuts}
+                // keyboardShortcuts={keyboardShortcuts}
                 />
             )}
             />

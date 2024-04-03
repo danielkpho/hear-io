@@ -2,21 +2,23 @@ import React, { useState } from "react";
 
 import Axios from "axios";
 
-import { TextField, Button, Grid, Snackbar, Alert } from "@mui/material";
+import { TextField, Button, Grid, Snackbar, Alert, IconButton, InputAdornment, Input } from "@mui/material";
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from "react-router-dom";
+
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export default function Register(){
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false); // New state for password visibility
 
     const [SnackbarOpen, setSnackbarOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
-    const token = localStorage.getItem("token");
-
     const navigate = useNavigate();
-    const storedUsername = localStorage.getItem("username");
 
     const handleSnackbarClose = () => {
         setSnackbarOpen(false);
@@ -28,20 +30,18 @@ export default function Register(){
             setSnackbarOpen(true);
             return;
         }
-        console.log('Username: ', username, 'Password: ', password);
-
         Axios.post("http://localhost:8000/register", {
             username: username,
             password: password,
         }).then((response) => {
-            console.log(response);
-
             if (response.data.message === "User already exists!"){
                 setAlertMessage("User already exists");
                 setSnackbarOpen(true);
             } else {
-                localStorage.setItem("token", response.data.token);
                 localStorage.setItem("username", response.data.username);
+                localStorage.setItem("rank", response.data.rank);
+                localStorage.setItem("token", response.data.token);
+                navigate("/profile")
             }
         }).catch((error) => {
             console.log(error);
@@ -63,16 +63,19 @@ export default function Register(){
                 setAlertMessage(response.data.message);
                 setSnackbarOpen(true);
             } else {
-                localStorage.setItem("token", response.data.token);
                 localStorage.setItem("username", response.data.username);
-                navigate("/")
+                localStorage.setItem("rank", response.data.rank);
+                localStorage.setItem("token", response.data.token);
+                navigate("/heario-client/")
             }
         }).catch((error) => {
             console.log(error);
         });
     }
 
-    console.log("Register rendered")
+    const handleClickShowPassword = () => {
+        setShowPassword(!showPassword);
+    };
 
     return(
 
@@ -85,21 +88,37 @@ export default function Register(){
                 padding= {2}
                 spacing={2}
                 >
-                    <Grid item>
+                    <Grid item xs={12}>
                         <TextField
                         id="outlined-basic"
                         label="Username"
                         variant="outlined"
+                        fullWidth
                         onChange={(e) => {setUsername(e.target.value)}}
+                        InputProps={{endAdornment: <InputAdornment position="end"><AccountCircleIcon/></InputAdornment>}}
                         />
                     </Grid>
                     <Grid item>
-                        <TextField
-                        id="outlined-basic"
-                        label="Password"
-                        variant="outlined"
-                        onChange={(e) => {setPassword(e.target.value)}}
-                        />
+                            <TextField
+                                id="outlined-basic"
+                                type={showPassword ? 'text' : 'password'}
+                                label="Password"
+                                variant="outlined"
+                                fullWidth // Ensures the TextField takes up the full width of its container
+                                onChange={(e) => { setPassword(e.target.value) }}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label="toggle password visibility"
+                                                onClick={handleClickShowPassword}
+                                            >
+                                                {showPassword ? <Visibility /> : <VisibilityOff />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />                    
                     </Grid>
                     <Grid item
                         container

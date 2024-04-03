@@ -14,6 +14,7 @@ import { CssBaseline, Typography, Link } from "@mui/material";
 import "./Knewave.css"
 
 import { blue, green, red } from "@mui/material/colors";
+import GlobalLeaderboard from "./features/GlobalLeaderboard";
 
 const theme = createTheme({
     palette: {
@@ -86,7 +87,7 @@ function App() {
       >
       <Grid item color='warning.main'>
         <Typography variant="h2" color="green" align="center">
-          <Link href="/" underline="none" color="inherit">
+          <Link href="/heario-client/" underline="none" color="inherit">
             HEAR.IO
           </Link>
         </Typography>
@@ -94,10 +95,11 @@ function App() {
     </Grid>
       <BrowserRouter>
         <Routes>
-        <Route path="/" exact element={<div><Home /></div>} />
+        <Route path="/heario-client/" exact element={<div><Home /></div>} />
           <Route path="/register" exact element= {<Register/>} />
           <Route path ="/profile" exact element= {<Profile/>} />
           <Route path = "/piano" exact element= {<ReactPiano/>} />
+          <Route path = "/leaderboard" exact element = {<GlobalLeaderboard/>} />
         </Routes>
       </BrowserRouter>
     </div>
