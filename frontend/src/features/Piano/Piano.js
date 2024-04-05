@@ -1,9 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Piano, KeyboardShortcuts, MidiNumbers } from 'react-piano';
 
 import 'react-piano/dist/styles.css';
 
-import { Grid } from "@mui/material";
+import { Grid, Button } from "@mui/material";
 
 import SoundfontProvider from './SoundfontProvider';
 
@@ -12,6 +13,7 @@ export default function ReactPiano(){
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const soundfontHostname = 'https://d1pzp51pvbm36p.cloudfront.net';
+const navigate = useNavigate();
 
 const noteRange = {
   first: MidiNumbers.fromNote('c3'),
@@ -59,6 +61,18 @@ function BasicPiano() {
             />
             </Grid>
         <Grid/>
+        <Grid item
+                container
+                direction="row"
+                padding={2}
+                spacing={2}
+                justifyContent={"center"}
+                alignItems={"center"}
+                >
+                    <Grid item>
+                        <Button variant="contained" onClick={() => navigate("/heario-client")}>Back</Button>
+                    </Grid>
+                </Grid>
     </Grid>
     );
 }
