@@ -301,10 +301,6 @@ export default function Game(){
                         )}
                         {isPianoReady && (
                         <div>
-                        <div>
-                            <button onClick={restartGame}>Restart Game</button>
-                            <button onClick={nextRound}>Next Round</button>
-                            </div>
                             <Grid container justifyContent="center" alignItems="center" spacing={2}>
                                 <Grid item>
                                     <Button 
