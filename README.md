@@ -1,6 +1,6 @@
 Website is live at: https://danielkpho.github.io/heario-client/
 
-1. Install PostgreSQL and create a database called heariodb.
+1. Install PostgreSQL and create a database called _heariodb_.
 2. git clone the directory: _git clone https://git.cs.bham.ac.uk/projects-2023-24/dxh253.git_
 3. Create .env file with HEARIO_SECRET_KEY = _64 character string_.
 4. Store it in the root folder.
