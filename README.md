@@ -7,6 +7,7 @@ Website is live at: https://danielkpho.github.io/heario-client/
 5. Run npm install in frontend directory then _npm start_ to start the frontend.
 6. Run npm install in backend directory then _nodemon app.js_ to start the backend.
 7. Database tables will be created automatically after starting the backend
+8. Open http://localhost:3000/heario-client or http://localhost:3000 in your browser to view the website
 
 Server will run on localhost:8000
 Client will run on localhost:3000
