@@ -14,7 +14,7 @@ class NoteQuestion{
         this.correctAnswer = correctAnswer;
         this.questionType = questionType;
     }
-    static init(type, difficulty){ // to fix 
+    static init(type, difficulty){ 
         let note;
         let tone;
         let possibleAnswers;
