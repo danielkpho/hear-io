@@ -85,7 +85,7 @@ class Room {
           return Promise.resolve();
         } else {
           console.log("All types processed");
-          return Promise.resolve(); // or reject with an error, depending on your needs
+          return Promise.resolve();
         }
     }
     getNote(){
@@ -119,7 +119,7 @@ class Room {
         return scores;
     }
     setPlayerData(playerId, data){
-        this.players[playerId].setData(data); // data is an array of [question, tries, accuracy
+        this.players[playerId].setData(data); // data is an array of [question, tries, accuracy]
     }
     getAllPlayerData(){
         const data = [];
