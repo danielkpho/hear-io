@@ -29,8 +29,8 @@ export default function Lobby(){
     useEffect(() => {
         const handleBeforeUnload = (event) => {
           const message = "Are you sure you want to leave? You will be redirected to the home page.";
-          event.returnValue = message; // Standard for most browsers
-          return message; // For some older browsers
+          event.returnValue = message; 
+          return message; 
         };
     
         window.addEventListener('beforeunload', handleBeforeUnload);
