@@ -48,7 +48,6 @@ export default function Game(){
 
     useEffect(() => {
         const loadReactPiano = async () => {
-            // Assuming ReactPiano has an asynchronous initialization method
             await LazyReactPiano.preload();
             setPianoLoaded(true);
           };
@@ -131,9 +130,9 @@ export default function Game(){
         console.log("isPianoReady: " + isPianoReady);
         await new Promise((resolve) => { 
             if (isPianoReady) {
-                resolve(); // Piano is ready, resolve immediately
+                resolve(); 
             } else {
-                const intervalId = setInterval(() => {  // Check repeatedly
+                const intervalId = setInterval(() => {
                     if (isPianoReady) {
                         clearInterval(intervalId);
                         resolve(); 
@@ -253,7 +252,6 @@ export default function Game(){
 
     function restartGame() {    
         if (username === winner) {
-            // Include the token in the Authorization header for the /incrementGamesWon request
             Axios.post("http://localhost:8000/incrementGamesWon", {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -265,7 +263,6 @@ export default function Game(){
             });
         }
     
-        // Include the token in the Authorization header for the /getRank request
         Axios.post("http://localhost:8000/getRank", {}, {
             headers: {
                 'Authorization': `Bearer ${token}`
