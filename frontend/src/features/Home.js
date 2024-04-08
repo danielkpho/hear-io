@@ -41,7 +41,6 @@ export default function Home(){
         });
       
         return () => {
-          // Cleanup logic if needed
           socket.off("rooms");
         };
       }, []);
