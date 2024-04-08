@@ -101,7 +101,6 @@ function TonesAnswerButton(){
     });
 
     function updateAttempts(correct) {    
-        // Include the token in the Authorization header
         Axios.post("http://localhost:8000/updateAttempts", {
             questionType: questionType,
             question: correctAnswer,
