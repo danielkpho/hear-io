@@ -2,7 +2,7 @@ Website is live at: https://danielkpho.github.io/heario-client/.
 **Please email dxh253@student.bham.ac.uk when you want the server turned on**
 
 1. Install PostgreSQL and create a database called _heariodb_.
-2. git clone the directory: _git clone https://git.cs.bham.ac.uk/projects-2023-24/dxh253.git_
+2. git clone the directory: _git clone https://git.cs.bham.ac.uk/projects-2023-24/dxh253.git_ (Requires Personal Access Token)
 3. Create .env file with HEARIO_SECRET_KEY = _64 character string_.
 4. Store it in the root folder.
 5. Run npm install in frontend directory then _npm start_ to start the frontend.
