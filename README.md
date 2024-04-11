@@ -1,4 +1,5 @@
-Website is live at: https://danielkpho.github.io/heario-client/
+Website is live at: https://danielkpho.github.io/heario-client/.
+**Please email me when you are done visiting the website or done marking so I can turn off the server**
 
 1. Install PostgreSQL and create a database called _heariodb_.
 2. git clone the directory: _git clone https://git.cs.bham.ac.uk/projects-2023-24/dxh253.git_
