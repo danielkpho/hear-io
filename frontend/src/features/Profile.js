@@ -15,6 +15,8 @@ export default function Profile(){
 
     const [data, setData] = useState([]);
     const [rank, setRank] = useState(1200);
+
+    const token = localStorage.getItem("token");
     
     const [sortConfig, setSortConfig] = useState({key: null, direction: "ascending"})
     
@@ -36,8 +38,10 @@ export default function Profile(){
       };
 
     useEffect(() => {
-        Axios.post("http://localhost:8000/getGamesPlayed", {
-            username: username,
+        Axios.post("http://localhost:8000/getGamesPlayed", {}, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
         }).then((response) => {
             setGamesPlayed(response.data.gamesPlayed);
             setGamesWon(response.data.gamesWon)
@@ -47,8 +51,10 @@ export default function Profile(){
     }, []);
 
     useEffect(() => {
-        Axios.post("http://localhost:8000/getAttempts", {
-            username: username
+        Axios.post("http://localhost:8000/getAttempts", {}, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
         }).then((response) => {
             console.log(response.data.result);
             setData(response.data.result);
@@ -58,8 +64,10 @@ export default function Profile(){
     }, []);
 
     useEffect(() => { // doesnt work on registration for not being asynchornous
-        Axios.post("http://localhost:8000/getRank", {
-            username: username
+        Axios.post("http://localhost:8000/getRank", {}, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
         }).then((response) => {
             localStorage.setItem("rank", response.data.rank);
             setRank(response.data.rank);
@@ -72,7 +80,7 @@ export default function Profile(){
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("rank");
-        navigate("/");
+        navigate("/heario-client/");
     };
 
     return (
@@ -84,6 +92,7 @@ export default function Profile(){
             spacing={2}
             padding={5}
         >
+
             <Grid item
                 container
                 direction="row"
@@ -158,7 +167,7 @@ export default function Profile(){
                 alignItems={"center"}
                 >
                     <Grid item>
-                        <Button variant="contained" onClick={() => navigate("/")}>Back</Button>
+                        <Button variant="contained" onClick={() => navigate("/heario-client")}>Back</Button>
                     </Grid>
                     <Grid item>
                         <Button color="error" variant="contained" onClick={logout}>Logout</Button>

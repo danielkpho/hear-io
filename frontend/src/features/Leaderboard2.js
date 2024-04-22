@@ -12,7 +12,6 @@ export default function Leaderboard2(){
     useEffect(() => {
         socket.emit("getData", {roomId: id});      
             socket.on("data", newData => { 
-                console.log(newData);
                 setData(newData);
             })
         return () => {

@@ -8,7 +8,6 @@ import { resetStats } from "../features/statSlice";
 
 import Game from "./Game";
 import Chat from "./Chat";
-import ReactPiano from "./Piano/Piano";
 
 import { Grid, Paper, Typography } from "@mui/material";
 import { Stack } from "@mui/material";
@@ -25,12 +24,13 @@ export default function Lobby(){
     const roundCount = useSelector(state => state.game.roundCount);
     const status = useSelector(state => state.game.status);
     const username = localStorage.getItem("username");
+    const token = localStorage.getItem("token");
 
     useEffect(() => {
         const handleBeforeUnload = (event) => {
           const message = "Are you sure you want to leave? You will be redirected to the home page.";
-          event.returnValue = message; // Standard for most browsers
-          return message; // For some older browsers
+          event.returnValue = message; 
+          return message; 
         };
     
         window.addEventListener('beforeunload', handleBeforeUnload);
@@ -55,9 +55,10 @@ export default function Lobby(){
             dispatch(setIsStarted(true));
             dispatch(setStatus("playing"))
             if(username){
-                Axios.post("http://localhost:8000/incrementGamesPlayed", {
-                    username: localStorage.getItem("username"),
-                } , {
+                Axios.post("http://localhost:8000/incrementGamesPlayed", {} , {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 }).then((response) => {
                     console.log(response);
                 }).catch((error) => {
@@ -81,7 +82,7 @@ export default function Lobby(){
     useEffect(() => {
         socket.on("scores", (scores) => {
             dispatch(allPlayers);
-            console.log("scores");
+            // console.log("scores");
             });
         return () => {
             socket.off("scores");

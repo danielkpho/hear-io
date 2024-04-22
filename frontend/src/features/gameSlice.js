@@ -11,6 +11,7 @@ const initialState = {
         rounds: 3,
         time: 10,
         piano: 0,
+        difficulty: 0,
         sharps: false,
         notes: true,
         intervals: true,
@@ -23,6 +24,7 @@ const initialState = {
     isGameOver: false,
     isStarted: false,
     scores: [], // { id: 1, name: 'player1', score: 0 }
+    isChatFocused: false,
 }
 
 export const gameSlice = createSlice({
@@ -92,6 +94,7 @@ export const gameSlice = createSlice({
                 rounds: 3,
                 time: 10,
                 piano: 0,
+                difficulty: 0,
                 sharps: false,
                 notes: true,
                 intervals: true,
@@ -105,6 +108,9 @@ export const gameSlice = createSlice({
             state.isStarted = false;
             state.scores = [];
         },
+        setIsChatFocused: (state, action) => { 
+            state.isChatFocused = action.payload;
+        }
     }
 });
 
@@ -125,6 +131,7 @@ export const {
     allPlayers,
     resetGame,
     resetState,
+    setIsChatFocused
 } = gameSlice.actions;
 
 export const roundCount = (state) => state.game.roundCount;
