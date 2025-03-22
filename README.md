@@ -1,3 +1,5 @@
+**UPDATE 1/7/2024: Server on Heroku has been deleted and can only be ran locally** 
+
 Website is live at: https://danielkpho.github.io/heario-client/.
 **Please email dxh253@student.bham.ac.uk when you want the server turned on**
 
